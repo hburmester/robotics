@@ -29,7 +29,8 @@ setup(
 		'publisher_best_effort = robot_basics.publisher_best_effort:main',
 		'subscriber_reliable = robot_basics.subscriber_reliable:main',
 		'publisher_reliable = robot_basics.publisher_reliable:main',
-		'subscriber_best_effort = robot_basics.subscriber_best_effort:main'
+		'subscriber_best_effort = robot_basics.subscriber_best_effort:main',
+		'distance_sensor = robot_basics.distance_sensor:main'
         ],
     },
 )
