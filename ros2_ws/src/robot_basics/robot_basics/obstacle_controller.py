@@ -10,6 +10,18 @@ class ObstacleController(Node):
     def __init__(self):
         super().__init__('obstacle_controller')
 
+        self.declare_parameter('desired_distance', 0.5)
+        self.declare_parameter('kp', 0.8)
+        self.declare_parameter('max_speed', 0.3)
+        self.declare_parameter('tolerance', 0.03)
+
+        self.desired_distance_ = (
+            self.get_parameter('desired_distance').value
+        )
+        self.kp_ = self.get_parameter('kp').value
+        self.max_speed_ = self.get_parameter('max_speed').value
+        self.tolerance_ = self.get_parameter('tolerance').value
+
         self.subscription_ = self.create_subscription(
             Float64,
             'distance',
@@ -23,13 +35,12 @@ class ObstacleController(Node):
             10
         )
 
-        self.desired_distance_ = 0.5
-        self.kp_ = 0.8
-        self.max_speed_ = 0.3
-        self.tolerance_ = 0.03
-
         self.get_logger().info(
-            'Proportional obstacle controller started'
+            f'Controller started: '
+            f'desired_distance={self.desired_distance_:.2f} m, '
+            f'kp={self.kp_:.2f}, '
+            f'max_speed={self.max_speed_:.2f} m/s, '
+            f'tolerance={self.tolerance_:.2f} m'
         )
 
     def distance_callback(self, msg):
