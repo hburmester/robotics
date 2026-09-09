@@ -23,41 +23,28 @@ class ObstacleController(Node):
             10
         )
 
-        self.stop_distance_ = 0.5
-        self.resume_distance_ = 0.6
-        self.forward_speed_ = 0.3
-
-        self.state_ = 'MOVING'
+        self.desired_distance_ = 0.5
+        self.kp_ = 0.8
+        self.max_speed_ = 0.3
 
         self.get_logger().info(
-            f'Obstacle controller started in state: {self.state_}'
+            'Proportional obstacle controller started'
         )
 
     def distance_callback(self, msg):
-
         distance = msg.data
 
-        if self.state_ == 'MOVING':
-            if distance <= self.stop_distance_:
-                self.state_ = 'STOPPED'
-                self.get_logger().info(
-                    f'STOPPED: obstacle at {distance:.3f} m'
-                )
+        error = distance - self.desired_distance_
 
-        elif self.state_ == 'STOPPED':
-            if distance >= self.resume_distance_:
-                self.state_ = 'MOVING'
-                self.get_logger().info(
-                    f'MOVING: obstacle at {distance:.3f} m'
-                )
+        velocity = self.kp_ * error
+
+        velocity = max(
+            0.0,
+            min(velocity, self.max_speed_)
+        )
 
         command = Twist()
-
-        if self.state_ == 'MOVING':
-            command.linear.x = self.forward_speed_
-        else:
-            command.linear.x = 0.0
-
+        command.linear.x = velocity
         command.angular.z = 0.0
 
         self.cmd_vel_publisher_.publish(command)
