@@ -32,6 +32,7 @@ setup(
 		'subscriber_best_effort = robot_basics.subscriber_best_effort:main',
 		'distance_sensor = robot_basics.distance_sensor:main',
 		'obstacle_controller = robot_basics.obstacle_controller:main',
+		'simulated_robot = robot_basics.simulated_robot:main',
         ],
     },
 )

@@ -17,18 +17,35 @@ class DistanceSensor(Node):
             10
         )
 
+        self.position_subscription_ = self.create_subscription(
+            Float64,
+            'robot_position',
+            self.position_callback,
+            10
+        )
+
+        self.robot_position_ = 0.0
+        self.obstacle_position_ = 3.0
+
         self.timer_ = self.create_timer(
             0.1,
             self.timer_callback
         )
 
-        self.true_distance_ = 2.0
-
         self.get_logger().info('Distance sensor started')
 
+    def position_callback(self, msg):
+        self.robot_position_ = msg.data
+
     def timer_callback(self):
+        true_distance = self.obstacle_position_ - self.robot_position_
+
         noise = random.gauss(0.0, 0.02)
-        measured_distance = self.true_distance_ + noise
+
+        measured_distance = max(
+            0.0,
+            true_distance + noise
+        )
 
         msg = Float64()
         msg.data = measured_distance
