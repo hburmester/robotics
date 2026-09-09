@@ -24,14 +24,36 @@ class ObstacleController(Node):
         )
 
         self.stop_distance_ = 0.5
+        self.resume_distance_ = 0.6
         self.forward_speed_ = 0.3
 
-        self.get_logger().info('Obstacle controller started')
+        self.state_ = 'MOVING'
+
+        self.get_logger().info(
+            f'Obstacle controller started in state: {self.state_}'
+        )
 
     def distance_callback(self, msg):
+
+        distance = msg.data
+
+        if self.state_ == 'MOVING':
+            if distance <= self.stop_distance_:
+                self.state_ = 'STOPPED'
+                self.get_logger().info(
+                    f'STOPPED: obstacle at {distance:.3f} m'
+                )
+
+        elif self.state_ == 'STOPPED':
+            if distance >= self.resume_distance_:
+                self.state_ = 'MOVING'
+                self.get_logger().info(
+                    f'MOVING: obstacle at {distance:.3f} m'
+                )
+
         command = Twist()
 
-        if msg.data > self.stop_distance_:
+        if self.state_ == 'MOVING':
             command.linear.x = self.forward_speed_
         else:
             command.linear.x = 0.0
