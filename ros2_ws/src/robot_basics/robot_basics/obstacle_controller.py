@@ -26,6 +26,7 @@ class ObstacleController(Node):
         self.desired_distance_ = 0.5
         self.kp_ = 0.8
         self.max_speed_ = 0.3
+        self.tolerance_ = 0.03
 
         self.get_logger().info(
             'Proportional obstacle controller started'
@@ -36,12 +37,15 @@ class ObstacleController(Node):
 
         error = distance - self.desired_distance_
 
-        velocity = self.kp_ * error
+        if abs(error) <= self.tolerance_:
+            velocity = 0.0
+        else:
+            velocity = self.kp_ * error
 
-        velocity = max(
-            0.0,
-            min(velocity, self.max_speed_)
-        )
+            velocity = max(
+                0.0,
+                min(velocity, self.max_speed_)
+            )
 
         command = Twist()
         command.linear.x = velocity
