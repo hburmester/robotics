@@ -1,8 +1,18 @@
+import os
+
+from ament_index_python.packages import get_package_share_directory
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    config_file = os.path.join(
+        get_package_share_directory('robot_basics'),
+        'config',
+        'controller.yaml'
+    )
+
     return LaunchDescription([
         Node(
             package='robot_basics',
@@ -13,7 +23,8 @@ def generate_launch_description():
         Node(
             package='robot_basics',
             executable='obstacle_controller',
-            name='obstacle_controller'
+            name='obstacle_controller',
+            parameters=[config_file]
         ),
 
         Node(
