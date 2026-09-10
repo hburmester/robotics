@@ -25,14 +25,17 @@ class SimulatedRobot(Node):
             10
         )
 
-        # Robot state
+        # Robot pose
         self.x_ = 0.0
         self.y_ = 0.0
         self.theta_ = 0.0
 
-        # Current commanded velocities
-        self.linear_velocity_ = 0.0
-        self.angular_velocity_ = 0.0
+        # Differential-drive geometry
+        self.wheel_separation_ = 0.4
+
+        # Wheel linear velocities
+        self.left_wheel_velocity_ = 0.0
+        self.right_wheel_velocity_ = 0.0
 
         # Simulation timestep
         self.dt_ = 0.1
@@ -42,27 +45,53 @@ class SimulatedRobot(Node):
             self.update_robot
         )
 
-        self.get_logger().info('2D simulated robot started')
+        self.get_logger().info(
+            'Differential-drive simulated robot started'
+        )
 
     def cmd_vel_callback(self, msg):
-        self.linear_velocity_ = msg.linear.x
-        self.angular_velocity_ = msg.angular.z
+        linear_velocity = msg.linear.x
+        angular_velocity = msg.angular.z
+
+        # Inverse differential-drive kinematics:
+        # robot body velocity -> wheel velocities
+        self.left_wheel_velocity_ = (
+            linear_velocity
+            - angular_velocity * self.wheel_separation_ / 2.0
+        )
+
+        self.right_wheel_velocity_ = (
+            linear_velocity
+            + angular_velocity * self.wheel_separation_ / 2.0
+        )
 
     def update_robot(self):
-        # Differential-drive planar kinematic model
+        # Forward differential-drive kinematics:
+        # wheel velocities -> robot body velocity
+        linear_velocity = (
+            self.right_wheel_velocity_
+            + self.left_wheel_velocity_
+        ) / 2.0
+
+        angular_velocity = (
+            self.right_wheel_velocity_
+            - self.left_wheel_velocity_
+        ) / self.wheel_separation_
+
+        # Transform body-frame velocity into world-frame motion
         self.x_ += (
-            self.linear_velocity_
+            linear_velocity
             * math.cos(self.theta_)
             * self.dt_
         )
 
         self.y_ += (
-            self.linear_velocity_
+            linear_velocity
             * math.sin(self.theta_)
             * self.dt_
         )
 
-        self.theta_ += self.angular_velocity_ * self.dt_
+        self.theta_ += angular_velocity * self.dt_
 
         pose_msg = Pose2D()
 
