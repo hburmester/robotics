@@ -1,6 +1,4 @@
 from setuptools import find_packages, setup
-import os
-from glob import glob
 
 package_name = 'robot_basics'
 
@@ -12,10 +10,6 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-	(os.path.join('share', package_name, 'launch'),
-	    glob('launch/*.launch.py')),
-	(os.path.join('share', package_name, 'config'),
-	    glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -36,9 +30,6 @@ setup(
 		'subscriber_reliable = robot_basics.subscriber_reliable:main',
 		'publisher_reliable = robot_basics.publisher_reliable:main',
 		'subscriber_best_effort = robot_basics.subscriber_best_effort:main',
-		'distance_sensor = robot_basics.distance_sensor:main',
-		'obstacle_controller = robot_basics.obstacle_controller:main',
-		'simulated_robot = robot_basics.simulated_robot:main',
         ],
     },
 )

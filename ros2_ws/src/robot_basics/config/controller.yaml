@@ -1,6 +1,0 @@
-obstacle_controller:
-  ros__parameters:
-    desired_distance: 0.5
-    kp: 0.8
-    max_speed: 0.3
-    tolerance: 0.03
