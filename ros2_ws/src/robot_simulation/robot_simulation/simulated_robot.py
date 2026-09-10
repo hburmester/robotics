@@ -31,13 +31,14 @@ class SimulatedRobot(Node):
         self.theta_ = 0.0
 
         # Differential-drive geometry
+        self.wheel_radius_ = 0.05
         self.wheel_separation_ = 0.4
 
-        # Wheel linear velocities
-        self.left_wheel_velocity_ = 0.0
-        self.right_wheel_velocity_ = 0.0
+        # Wheel angular velocities [rad/s]
+        self.left_wheel_angular_velocity_ = 0.0
+        self.right_wheel_angular_velocity_ = 0.0
 
-        # Simulation timestep
+        # Simulation timestep [s]
         self.dt_ = 0.1
 
         self.timer_ = self.create_timer(
@@ -54,31 +55,54 @@ class SimulatedRobot(Node):
         angular_velocity = msg.angular.z
 
         # Inverse differential-drive kinematics:
-        # robot body velocity -> wheel velocities
-        self.left_wheel_velocity_ = (
+        # body velocity -> wheel linear velocities [m/s]
+        left_wheel_linear_velocity = (
             linear_velocity
             - angular_velocity * self.wheel_separation_ / 2.0
         )
 
-        self.right_wheel_velocity_ = (
+        right_wheel_linear_velocity = (
             linear_velocity
             + angular_velocity * self.wheel_separation_ / 2.0
         )
 
+        # Convert wheel linear velocity to angular velocity:
+        # omega_wheel = v_wheel / r
+        self.left_wheel_angular_velocity_ = (
+            left_wheel_linear_velocity / self.wheel_radius_
+        )
+
+        self.right_wheel_angular_velocity_ = (
+            right_wheel_linear_velocity / self.wheel_radius_
+        )
+
     def update_robot(self):
+        # Convert wheel angular velocities back to
+        # tangential wheel velocities [m/s]:
+        # v_wheel = r * omega_wheel
+        left_wheel_linear_velocity = (
+            self.wheel_radius_
+            * self.left_wheel_angular_velocity_
+        )
+
+        right_wheel_linear_velocity = (
+            self.wheel_radius_
+            * self.right_wheel_angular_velocity_
+        )
+
         # Forward differential-drive kinematics:
         # wheel velocities -> robot body velocity
         linear_velocity = (
-            self.right_wheel_velocity_
-            + self.left_wheel_velocity_
+            right_wheel_linear_velocity
+            + left_wheel_linear_velocity
         ) / 2.0
 
         angular_velocity = (
-            self.right_wheel_velocity_
-            - self.left_wheel_velocity_
+            right_wheel_linear_velocity
+            - left_wheel_linear_velocity
         ) / self.wheel_separation_
 
-        # Transform body-frame velocity into world-frame motion
+        # Body-frame velocity -> world-frame motion
         self.x_ += (
             linear_velocity
             * math.cos(self.theta_)
