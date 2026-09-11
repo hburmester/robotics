@@ -4,3 +4,6 @@ obstacle_controller:
     kp: 0.8
     max_speed: 0.3
     tolerance: 0.03
+
+    heading_kp: 1.5
+    max_angular_speed: 1.0
