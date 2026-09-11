@@ -1,3 +1,5 @@
+import math
+
 import rclpy
 from rclpy.node import Node
 
@@ -84,8 +86,6 @@ class ObstacleController(Node):
 
     def control_loop(self):
 
-        # Do not control until both sensor measurements
-        # have been received.
         if self.distance_ is None or self.bearing_ is None:
             return
 
@@ -110,6 +110,18 @@ class ObstacleController(Node):
                     self.max_speed_
                 )
             )
+
+        # Reduce forward speed when the robot
+        # is not aligned with the target.
+        alignment_factor = max(
+            0.0,
+            math.cos(self.bearing_)
+        )
+
+        linear_velocity = (
+            linear_velocity
+            * alignment_factor
+        )
 
         # Heading controller
         angular_velocity = (
