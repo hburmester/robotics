@@ -1,0 +1,4 @@
+simulated_robot:
+  ros__parameters:
+    wheel_radius: 0.05
+    wheel_separation: 0.4

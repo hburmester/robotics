@@ -31,8 +31,11 @@ class SimulatedRobot(Node):
         self.theta_ = 0.0
 
         # Differential-drive geometry
-        self.wheel_radius_ = 0.05
-        self.wheel_separation_ = 0.4
+        self.declare_parameter('wheel_radius', 0.05)
+        self.declare_parameter('wheel_separation', 0.4)
+
+        self.wheel_radius_ = self.get_parameter('wheel_radius').value
+        self.wheel_separation_ = self.get_parameter('wheel_separation').value
 
         # Wheel angular velocities [rad/s]
         self.left_wheel_angular_velocity_ = 0.0
