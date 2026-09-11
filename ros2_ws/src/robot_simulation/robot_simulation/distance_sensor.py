@@ -3,6 +3,7 @@ import random
 import rclpy
 from rclpy.node import Node
 
+from geometry_msgs.msg import Pose2D
 from std_msgs.msg import Float64
 
 
@@ -11,36 +12,42 @@ class DistanceSensor(Node):
     def __init__(self):
         super().__init__('distance_sensor')
 
-        self.publisher_ = self.create_publisher(
+        self.distance_publisher_ = self.create_publisher(
             Float64,
-            'distance',
+            '/distance',
             10
         )
 
-        self.position_subscription_ = self.create_subscription(
-            Float64,
-            'robot_position',
-            self.position_callback,
+        self.pose_subscription_ = self.create_subscription(
+            Pose2D,
+            '/robot_pose',
+            self.pose_callback,
             10
         )
 
-        self.robot_position_ = 0.0
-        self.obstacle_position_ = 3.0
+        self.obstacle_position_x_ = 3.0
+        self.robot_x_ = 0.0
 
         self.timer_ = self.create_timer(
             0.1,
-            self.timer_callback
+            self.publish_distance
         )
 
-        self.get_logger().info('Distance sensor started')
+        self.get_logger().info('2D-compatible distance sensor started')
 
-    def position_callback(self, msg):
-        self.robot_position_ = msg.data
+    def pose_callback(self, msg):
+        self.robot_x_ = msg.x
 
-    def timer_callback(self):
-        true_distance = self.obstacle_position_ - self.robot_position_
+    def publish_distance(self):
+        true_distance = (
+            self.obstacle_position_x_
+            - self.robot_x_
+        )
 
-        noise = random.gauss(0.0, 0.02)
+        noise = random.gauss(
+            0.0,
+            0.02
+        )
 
         measured_distance = max(
             0.0,
@@ -50,13 +57,14 @@ class DistanceSensor(Node):
         msg = Float64()
         msg.data = measured_distance
 
-        self.publisher_.publish(msg)
+        self.distance_publisher_.publish(msg)
 
 
 def main(args=None):
     rclpy.init(args=args)
 
     node = DistanceSensor()
+
     rclpy.spin(node)
 
     node.destroy_node()
