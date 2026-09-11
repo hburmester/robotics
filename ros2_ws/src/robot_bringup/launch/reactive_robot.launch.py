@@ -7,10 +7,18 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    config_file = os.path.join(
-        get_package_share_directory('robot_bringup'),
+    bringup_share = get_package_share_directory('robot_bringup')
+
+    controller_config = os.path.join(
+        bringup_share,
         'config',
         'controller.yaml'
+    )
+
+    simulation_config = os.path.join(
+        bringup_share,
+        'config',
+        'simulation.yaml'
     )
 
     return LaunchDescription([
@@ -24,12 +32,13 @@ def generate_launch_description():
             package='robot_control',
             executable='obstacle_controller',
             name='obstacle_controller',
-            parameters=[config_file]
+            parameters=[controller_config]
         ),
 
         Node(
             package='robot_simulation',
             executable='simulated_robot',
-            name='simulated_robot'
+            name='simulated_robot',
+            parameters=[simulation_config]
         ),
     ])
