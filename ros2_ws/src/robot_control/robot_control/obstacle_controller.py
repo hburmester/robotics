@@ -1,6 +1,7 @@
 import math
 
 import rclpy
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 
 from geometry_msgs.msg import Twist
@@ -45,6 +46,11 @@ class ObstacleController(Node):
             'max_angular_speed'
         ).value
 
+        # Register runtime parameter callback
+        self.add_on_set_parameters_callback(
+            self.parameter_callback
+        )
+
         # Latest sensor measurements
         self.distance_ = None
         self.bearing_ = None
@@ -76,6 +82,84 @@ class ObstacleController(Node):
 
         self.get_logger().info(
             '2D obstacle controller started'
+        )
+
+    def parameter_callback(self, parameters):
+
+        new_desired_distance = self.desired_distance_
+        new_kp = self.kp_
+        new_max_speed = self.max_speed_
+        new_tolerance = self.tolerance_
+        new_heading_kp = self.heading_kp_
+        new_max_angular_speed = self.max_angular_speed_
+
+        for parameter in parameters:
+
+            if parameter.name == 'desired_distance':
+                if parameter.value < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='desired_distance must be >= 0'
+                    )
+
+                new_desired_distance = parameter.value
+
+            elif parameter.name == 'kp':
+                if parameter.value < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='kp must be >= 0'
+                    )
+
+                new_kp = parameter.value
+
+            elif parameter.name == 'max_speed':
+                if parameter.value < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='max_speed must be >= 0'
+                    )
+
+                new_max_speed = parameter.value
+
+            elif parameter.name == 'tolerance':
+                if parameter.value < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='tolerance must be >= 0'
+                    )
+
+                new_tolerance = parameter.value
+
+            elif parameter.name == 'heading_kp':
+                if parameter.value < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='heading_kp must be >= 0'
+                    )
+
+                new_heading_kp = parameter.value
+
+            elif parameter.name == 'max_angular_speed':
+                if parameter.value < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='max_angular_speed must be >= 0'
+                    )
+
+                new_max_angular_speed = parameter.value
+
+        # Only update application state after all parameters
+        # in the request have passed validation.
+        self.desired_distance_ = new_desired_distance
+        self.kp_ = new_kp
+        self.max_speed_ = new_max_speed
+        self.tolerance_ = new_tolerance
+        self.heading_kp_ = new_heading_kp
+        self.max_angular_speed_ = new_max_angular_speed
+
+        return SetParametersResult(
+            successful=True
         )
 
     def distance_callback(self, msg):
