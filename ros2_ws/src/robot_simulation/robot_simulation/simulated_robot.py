@@ -5,6 +5,7 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import Pose2D
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import JointState
 
 
 class SimulatedRobot(Node):
@@ -25,7 +26,13 @@ class SimulatedRobot(Node):
             10
         )
 
-        # Robot pose
+        self.wheel_state_publisher_ = self.create_publisher(
+            JointState,
+            '/wheel_states',
+            10
+        )
+
+        # Robot pose in the world frame
         self.x_ = 0.0
         self.y_ = 0.0
         self.theta_ = 0.0
@@ -34,12 +41,21 @@ class SimulatedRobot(Node):
         self.declare_parameter('wheel_radius', 0.05)
         self.declare_parameter('wheel_separation', 0.4)
 
-        self.wheel_radius_ = self.get_parameter('wheel_radius').value
-        self.wheel_separation_ = self.get_parameter('wheel_separation').value
+        self.wheel_radius_ = self.get_parameter(
+            'wheel_radius'
+        ).value
+
+        self.wheel_separation_ = self.get_parameter(
+            'wheel_separation'
+        ).value
 
         # Wheel angular velocities [rad/s]
         self.left_wheel_angular_velocity_ = 0.0
         self.right_wheel_angular_velocity_ = 0.0
+
+        # Wheel angular positions [rad]
+        self.left_wheel_angle_ = 0.0
+        self.right_wheel_angle_ = 0.0
 
         # Simulation timestep [s]
         self.dt_ = 0.1
@@ -61,27 +77,50 @@ class SimulatedRobot(Node):
         # body velocity -> wheel linear velocities [m/s]
         left_wheel_linear_velocity = (
             linear_velocity
-            - angular_velocity * self.wheel_separation_ / 2.0
+            - angular_velocity
+            * self.wheel_separation_
+            / 2.0
         )
 
         right_wheel_linear_velocity = (
             linear_velocity
-            + angular_velocity * self.wheel_separation_ / 2.0
+            + angular_velocity
+            * self.wheel_separation_
+            / 2.0
         )
 
-        # Convert wheel linear velocity to angular velocity:
+        # Convert wheel linear velocities to
+        # wheel angular velocities [rad/s]:
+        #
         # omega_wheel = v_wheel / r
         self.left_wheel_angular_velocity_ = (
-            left_wheel_linear_velocity / self.wheel_radius_
+            left_wheel_linear_velocity
+            / self.wheel_radius_
         )
 
         self.right_wheel_angular_velocity_ = (
-            right_wheel_linear_velocity / self.wheel_radius_
+            right_wheel_linear_velocity
+            / self.wheel_radius_
         )
 
     def update_robot(self):
+
+        # Integrate wheel angular position:
+        #
+        # phi_next = phi + omega * dt
+        self.left_wheel_angle_ += (
+            self.left_wheel_angular_velocity_
+            * self.dt_
+        )
+
+        self.right_wheel_angle_ += (
+            self.right_wheel_angular_velocity_
+            * self.dt_
+        )
+
         # Convert wheel angular velocities back to
         # tangential wheel velocities [m/s]:
+        #
         # v_wheel = r * omega_wheel
         left_wheel_linear_velocity = (
             self.wheel_radius_
@@ -118,15 +157,51 @@ class SimulatedRobot(Node):
             * self.dt_
         )
 
-        self.theta_ += angular_velocity * self.dt_
+        self.theta_ += (
+            angular_velocity
+            * self.dt_
+        )
 
+        self.publish_pose()
+
+        self.publish_wheel_states()
+
+    def publish_pose(self):
         pose_msg = Pose2D()
 
         pose_msg.x = self.x_
         pose_msg.y = self.y_
         pose_msg.theta = self.theta_
 
-        self.pose_publisher_.publish(pose_msg)
+        self.pose_publisher_.publish(
+            pose_msg
+        )
+
+    def publish_wheel_states(self):
+        wheel_state_msg = JointState()
+
+        wheel_state_msg.header.stamp = (
+            self.get_clock().now().to_msg()
+        )
+
+        wheel_state_msg.name = [
+            'left_wheel_joint',
+            'right_wheel_joint'
+        ]
+
+        wheel_state_msg.position = [
+            self.left_wheel_angle_,
+            self.right_wheel_angle_
+        ]
+
+        wheel_state_msg.velocity = [
+            self.left_wheel_angular_velocity_,
+            self.right_wheel_angular_velocity_
+        ]
+
+        self.wheel_state_publisher_.publish(
+            wheel_state_msg
+        )
 
 
 def main(args=None):
@@ -134,7 +209,10 @@ def main(args=None):
 
     node = SimulatedRobot()
 
-    rclpy.spin(node)
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
 
     node.destroy_node()
     rclpy.shutdown()
