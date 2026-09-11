@@ -1,3 +1,4 @@
+import math
 import random
 
 import rclpy
@@ -25,25 +26,39 @@ class DistanceSensor(Node):
             10
         )
 
-        self.obstacle_position_x_ = 3.0
+        # Obstacle position in the world frame [m]
+        self.obstacle_x_ = 3.0
+        self.obstacle_y_ = 2.0
+
+        # Robot position in the world frame [m]
         self.robot_x_ = 0.0
+        self.robot_y_ = 0.0
 
         self.timer_ = self.create_timer(
             0.1,
             self.publish_distance
         )
 
-        self.get_logger().info('2D-compatible distance sensor started')
+        self.get_logger().info(
+            '2D distance sensor started'
+        )
 
     def pose_callback(self, msg):
         self.robot_x_ = msg.x
+        self.robot_y_ = msg.y
 
     def publish_distance(self):
-        true_distance = (
-            self.obstacle_position_x_
-            - self.robot_x_
+        delta_x = self.obstacle_x_ - self.robot_x_
+        delta_y = self.obstacle_y_ - self.robot_y_
+
+        # Euclidean distance:
+        # d = sqrt(delta_x^2 + delta_y^2)
+        true_distance = math.sqrt(
+            delta_x ** 2
+            + delta_y ** 2
         )
 
+        # Simulated Gaussian sensor noise [m]
         noise = random.gauss(
             0.0,
             0.02
