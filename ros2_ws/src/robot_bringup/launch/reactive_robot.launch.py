@@ -23,6 +23,12 @@ def generate_launch_description():
         'simulation.yaml'
     )
 
+    odometry_config = os.path.join(
+        bringup_share,
+        'config',
+        'odometry.yaml'
+    )
+
     return LaunchDescription([
         Node(
             package='robot_simulation',
@@ -48,6 +54,6 @@ def generate_launch_description():
             package='robot_simulation',
             executable='odometry_estimator',
             name='odometry_estimator',
-            parameters=[simulation_config]
+            parameters=[odometry_config]
         ),
     ])
