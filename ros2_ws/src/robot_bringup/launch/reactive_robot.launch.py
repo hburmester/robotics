@@ -7,7 +7,9 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    bringup_share = get_package_share_directory('robot_bringup')
+    bringup_share = get_package_share_directory(
+        'robot_bringup'
+    )
 
     controller_config = os.path.join(
         bringup_share,
@@ -39,6 +41,13 @@ def generate_launch_description():
             package='robot_simulation',
             executable='simulated_robot',
             name='simulated_robot',
+            parameters=[simulation_config]
+        ),
+
+        Node(
+            package='robot_simulation',
+            executable='odometry_estimator',
+            name='odometry_estimator',
             parameters=[simulation_config]
         ),
     ])
