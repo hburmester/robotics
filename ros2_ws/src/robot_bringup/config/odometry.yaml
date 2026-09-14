@@ -1,4 +1,4 @@
 odometry_estimator:
   ros__parameters:
-    wheel_radius: 0.05
+    wheel_radius: 0.049
     wheel_separation: 0.4
