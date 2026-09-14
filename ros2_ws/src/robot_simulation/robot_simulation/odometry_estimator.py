@@ -3,7 +3,7 @@ import math
 import rclpy
 from rclpy.node import Node
 
-from geometry_msgs.msg import Pose2D
+from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
 
 
@@ -30,9 +30,9 @@ class OdometryEstimator(Node):
             10
         )
 
-        self.odom_pose_publisher_ = self.create_publisher(
-            Pose2D,
-            '/odom_pose',
+        self.odom_publisher_ = self.create_publisher(
+            Odometry,
+            '/odom',
             10
         )
 
@@ -57,8 +57,6 @@ class OdometryEstimator(Node):
         left_wheel_angle = msg.position[0]
         right_wheel_angle = msg.position[1]
 
-        # The first measurement initializes our reference.
-        # We cannot calculate a delta yet.
         if (
             self.previous_left_wheel_angle_ is None
             or self.previous_right_wheel_angle_ is None
@@ -84,7 +82,6 @@ class OdometryEstimator(Node):
             - self.previous_right_wheel_angle_
         )
 
-        # Store current encoder readings for next callback
         self.previous_left_wheel_angle_ = (
             left_wheel_angle
         )
@@ -104,7 +101,7 @@ class OdometryEstimator(Node):
             * delta_right_angle
         )
 
-        # Differential-drive displacement
+        # Robot incremental motion
         delta_distance = (
             delta_right_distance
             + delta_left_distance
@@ -115,7 +112,7 @@ class OdometryEstimator(Node):
             - delta_left_distance
         ) / self.wheel_separation_
 
-        # Integrate estimated robot pose
+        # Integrate estimated pose
         self.x_ += (
             delta_distance
             * math.cos(self.theta_)
@@ -128,14 +125,76 @@ class OdometryEstimator(Node):
 
         self.theta_ += delta_theta
 
-        odom_pose_msg = Pose2D()
+        # Calculate robot velocity from wheel velocities
+        left_wheel_velocity = (
+            self.wheel_radius_
+            * msg.velocity[0]
+        )
 
-        odom_pose_msg.x = self.x_
-        odom_pose_msg.y = self.y_
-        odom_pose_msg.theta = self.theta_
+        right_wheel_velocity = (
+            self.wheel_radius_
+            * msg.velocity[1]
+        )
 
-        self.odom_pose_publisher_.publish(
-            odom_pose_msg
+        linear_velocity = (
+            right_wheel_velocity
+            + left_wheel_velocity
+        ) / 2.0
+
+        angular_velocity = (
+            right_wheel_velocity
+            - left_wheel_velocity
+        ) / self.wheel_separation_
+
+        self.publish_odometry(
+            msg,
+            linear_velocity,
+            angular_velocity
+        )
+
+    def publish_odometry(
+        self,
+        wheel_state_msg,
+        linear_velocity,
+        angular_velocity
+    ):
+        odom_msg = Odometry()
+
+        odom_msg.header.stamp = (
+            wheel_state_msg.header.stamp
+        )
+
+        odom_msg.header.frame_id = 'odom'
+        odom_msg.child_frame_id = 'base_link'
+
+        # Position
+        odom_msg.pose.pose.position.x = self.x_
+        odom_msg.pose.pose.position.y = self.y_
+        odom_msg.pose.pose.position.z = 0.0
+
+        # Convert planar yaw angle into quaternion
+        odom_msg.pose.pose.orientation.x = 0.0
+        odom_msg.pose.pose.orientation.y = 0.0
+
+        odom_msg.pose.pose.orientation.z = (
+            math.sin(self.theta_ / 2.0)
+        )
+
+        odom_msg.pose.pose.orientation.w = (
+            math.cos(self.theta_ / 2.0)
+        )
+
+        # Robot velocity
+        odom_msg.twist.twist.linear.x = (
+            linear_velocity
+        )
+
+        odom_msg.twist.twist.angular.z = (
+            angular_velocity
+        )
+
+        self.odom_publisher_.publish(
+            odom_msg
         )
 
 
