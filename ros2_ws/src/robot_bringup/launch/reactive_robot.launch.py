@@ -29,6 +29,15 @@ def generate_launch_description():
         'odometry.yaml'
     )
 
+    urdf_path = os.path.join(
+        bringup_share,
+        'urdf',
+        'mobile_robot.urdf'
+    )
+
+    with open(urdf_path, 'r') as urdf_file:
+        robot_description = urdf_file.read()
+
     return LaunchDescription([
         Node(
             package='robot_simulation',
@@ -55,5 +64,19 @@ def generate_launch_description():
             executable='odometry_estimator',
             name='odometry_estimator',
             parameters=[odometry_config]
+        ),
+
+        Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            name='robot_state_publisher',
+            parameters=[
+                {
+                    'robot_description': robot_description
+                }
+            ],
+            remappings=[
+                ('joint_states', 'wheel_states')
+            ]
         ),
     ])
