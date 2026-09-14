@@ -3,8 +3,10 @@ import math
 import rclpy
 from rclpy.node import Node
 
+from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
+from tf2_ros import TransformBroadcaster
 
 
 class OdometryEstimator(Node):
@@ -34,6 +36,10 @@ class OdometryEstimator(Node):
             Odometry,
             '/odom',
             10
+        )
+
+        self.tf_broadcaster_ = TransformBroadcaster(
+            self
         )
 
         # Estimated robot pose
@@ -101,7 +107,7 @@ class OdometryEstimator(Node):
             * delta_right_angle
         )
 
-        # Robot incremental motion
+        # Differential-drive incremental motion
         delta_distance = (
             delta_right_distance
             + delta_left_distance
@@ -112,7 +118,7 @@ class OdometryEstimator(Node):
             - delta_left_distance
         ) / self.wheel_separation_
 
-        # Integrate estimated pose
+        # Integrate estimated robot pose
         self.x_ += (
             delta_distance
             * math.cos(self.theta_)
@@ -125,7 +131,7 @@ class OdometryEstimator(Node):
 
         self.theta_ += delta_theta
 
-        # Calculate robot velocity from wheel velocities
+        # Wheel angular velocity -> wheel linear velocity
         left_wheel_velocity = (
             self.wheel_radius_
             * msg.velocity[0]
@@ -136,6 +142,7 @@ class OdometryEstimator(Node):
             * msg.velocity[1]
         )
 
+        # Wheel velocity -> robot body velocity
         linear_velocity = (
             right_wheel_velocity
             + left_wheel_velocity
@@ -150,6 +157,10 @@ class OdometryEstimator(Node):
             msg,
             linear_velocity,
             angular_velocity
+        )
+
+        self.publish_transform(
+            msg
         )
 
     def publish_odometry(
@@ -172,7 +183,7 @@ class OdometryEstimator(Node):
         odom_msg.pose.pose.position.y = self.y_
         odom_msg.pose.pose.position.z = 0.0
 
-        # Convert planar yaw angle into quaternion
+        # Planar yaw -> quaternion
         odom_msg.pose.pose.orientation.x = 0.0
         odom_msg.pose.pose.orientation.y = 0.0
 
@@ -195,6 +206,38 @@ class OdometryEstimator(Node):
 
         self.odom_publisher_.publish(
             odom_msg
+        )
+
+    def publish_transform(
+        self,
+        wheel_state_msg
+    ):
+        transform = TransformStamped()
+
+        transform.header.stamp = (
+            wheel_state_msg.header.stamp
+        )
+
+        transform.header.frame_id = 'odom'
+        transform.child_frame_id = 'base_link'
+
+        transform.transform.translation.x = self.x_
+        transform.transform.translation.y = self.y_
+        transform.transform.translation.z = 0.0
+
+        transform.transform.rotation.x = 0.0
+        transform.transform.rotation.y = 0.0
+
+        transform.transform.rotation.z = (
+            math.sin(self.theta_ / 2.0)
+        )
+
+        transform.transform.rotation.w = (
+            math.cos(self.theta_ / 2.0)
+        )
+
+        self.tf_broadcaster_.sendTransform(
+            transform
         )
 
 
