@@ -176,7 +176,7 @@ class OdometryEstimator(Node):
         )
 
         odom_msg.header.frame_id = 'odom'
-        odom_msg.child_frame_id = 'base_link'
+        odom_msg.child_frame_id = 'base_footprint'
 
         # Position
         odom_msg.pose.pose.position.x = self.x_
@@ -219,7 +219,7 @@ class OdometryEstimator(Node):
         )
 
         transform.header.frame_id = 'odom'
-        transform.child_frame_id = 'base_link'
+        transform.child_frame_id = 'base_footprint'
 
         transform.transform.translation.x = self.x_
         transform.transform.translation.y = self.y_

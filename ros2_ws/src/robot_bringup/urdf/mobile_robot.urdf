@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 
 <robot name="mobile_robot">
+  <link name="base_footprint"/>
 
   <link name="base_link">
     <visual>
@@ -28,6 +29,12 @@
     </visual>
   </link>
 
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0.125" rpy="0 0 0"/>
+  </joint>
+
   <joint name="left_wheel_joint" type="continuous">
     <parent link="base_link"/>
     <child link="left_wheel_link"/>
@@ -42,7 +49,7 @@
     <child link="right_wheel_link"/>
 
     <origin xyz="0 -0.2 0" rpy="0 0 0"/>
-    
+
     <axis xyz="0 1 0"/>
   </joint>
 
